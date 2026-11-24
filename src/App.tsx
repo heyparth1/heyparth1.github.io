@@ -254,11 +254,7 @@ function Hero() {
         >
           <p className="max-w-2xl text-xl leading-snug text-balance sm:text-2xl">
             <span className="font-semibold text-brand">IIT Patna</span> graduate, now building AI systems at Windflow
-            AI.{" "}
-            <span className="text-muted-foreground">
-              Lately that means an agent that fixes open-source bugs, analytics that run on a small local model, and
-              language models squeezed down to −1, 0 and +1.
-            </span>
+            AI.
           </p>
           <div className="flex gap-6 md:justify-end">
             <a href="#projects" className={textLink}>
