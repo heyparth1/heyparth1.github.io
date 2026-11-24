@@ -12,9 +12,9 @@ import { ArrowDown, ArrowUpRight, Play } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { buttonVariants } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { StarField } from "@/components/star-field"
+import { StarField, type StarPick } from "@/components/star-field"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { CATEGORIES, FEATURED, GITHUB, MORE, STACK, type Featured } from "@/projects"
+import { CATEGORIES, FEATURED, GITHUB, MORE, STACK, type Featured, type Project } from "@/projects"
 import { cn } from "@/lib/utils"
 import photo from "@/assets/dhruv.jpg"
 
@@ -224,10 +224,62 @@ function CountUp({ to, decimals = 0, suffix = "" }: { to: number; decimals?: num
 const textLink =
   "group inline-flex items-center gap-1.5 border-b border-foreground pb-1 font-medium transition-colors hover:border-brand hover:text-brand [&_svg]:size-4"
 
+// Every star stands for a project: star n opens project n, wrapping around.
+const ALL_PROJECTS: Project[] = [...FEATURED, ...MORE]
+
 function Hero() {
+  const [pick, setPick] = useState<StarPick>(null)
+  const project = pick && ALL_PROJECTS[pick.index % ALL_PROJECTS.length]
+
+  useEffect(() => {
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && setPick(null)
+    addEventListener("keydown", esc)
+    return () => removeEventListener("keydown", esc)
+  }, [])
+
   return (
     <section className="relative flex min-h-svh flex-col justify-end overflow-hidden px-6 pt-32 pb-10">
-      <StarField className="absolute inset-0 size-full [mask-image:radial-gradient(ellipse_at_78%_150px,black_10%,transparent_65%)] md:[mask-image:radial-gradient(ellipse_at_78%_30%,black_20%,transparent_62%)]" />
+      <StarField onPick={setPick} className="absolute inset-0 size-full [mask-image:radial-gradient(ellipse_at_78%_150px,black_10%,transparent_65%)] md:[mask-image:radial-gradient(ellipse_at_78%_30%,black_20%,transparent_62%)]" />
+
+      <AnimatePresence>
+        {pick && project && (
+          // pops out of the clicked star; kept on screen near the right and bottom edges
+          <motion.div
+            key={pick.index}
+            data-star-card
+            className="absolute z-20 w-72 origin-top-left"
+            style={{
+              left: `clamp(0.75rem, ${pick.x + 14}px, calc(100% - 18.75rem))`,
+              top: `clamp(5rem, ${pick.y + 14}px, calc(100% - 16rem))`,
+            }}
+            initial={{ opacity: 0, scale: 0.4 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.6, transition: { duration: 0.15 } }}
+            transition={{ type: "spring", stiffness: 420, damping: 26 }}
+          >
+            <Card className="gap-3 rounded-2xl border-2 border-foreground bg-card p-5 ring-0">
+              <h3 className="text-lg font-semibold tracking-tight">{project.name}</h3>
+              <p className="text-sm text-muted-foreground">{project.points[0]}</p>
+              <Tags tags={project.tags} />
+              <div className="flex gap-5 text-sm">
+                {project.href && (
+                  <a href={project.href} target="_blank" rel="noreferrer" className={textLink}>
+                    GitHub <ArrowUpRight />
+                  </a>
+                )}
+                {project.demo && (
+                  <a href={project.demo} target="_blank" rel="noreferrer" className={textLink}>
+                    <Play className="fill-current" /> Demo
+                  </a>
+                )}
+                <a href="#projects" className={textLink} onClick={() => setPick(null)}>
+                  All projects <ArrowDown />
+                </a>
+              </div>
+            </Card>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div className="relative mx-auto w-full max-w-6xl">
         <h1 className="text-[clamp(2.75rem,11.5vw,9.5rem)] leading-[0.95] font-semibold tracking-tighter">

@@ -6,10 +6,15 @@ const POLE = { x: 0.78, y: 0.3 }
 /**
  * Hero backdrop. Dhruv means the pole star: the sky turns, it stays put.
  * So every star here slowly circles one fixed star, leaving a short trail
- * like a long-exposure photo. Stars near the cursor light up.
+ * like a long-exposure photo. Stars near the cursor light up, and clicking
+ * one reports it through `onPick` (null when the click misses every star).
  */
-export function StarField({ className }: { className?: string }) {
+export type StarPick = { index: number; x: number; y: number } | null
+
+export function StarField({ className, onPick }: { className?: string; onPick?: (pick: StarPick) => void }) {
   const ref = useRef<HTMLCanvasElement>(null)
+  const pick = useRef(onPick)
+  pick.current = onPick
 
   useEffect(() => {
     const canvas = ref.current!
@@ -25,6 +30,23 @@ export function StarField({ className }: { className?: string }) {
     let w = 0
     let h = 0
     let raf = 0
+    let now = 0 // time of the last drawn frame, so clicks hit what is on screen
+    let ping = { x: 0, y: 0, t: -1e9 } // ring that expands from a clicked star
+    const HIT = 26 // px: stars are tiny, so clicks get a generous radius
+    const pole = () => ({ px: w * POLE.x, py: w < 768 ? 150 : h * POLE.y })
+    // nearest star to a point, among those the mask leaves visible
+    const nearest = (mx: number, my: number) => {
+      const { px, py } = pole()
+      let best = -1
+      let bestD = HIT
+      stars.forEach((s, i) => {
+        if (s.r > Math.max(w, h) * 0.4) return
+        const a = s.a - now * SPEED
+        const d = Math.hypot(px + Math.cos(a) * s.r - mx, py + Math.sin(a) * s.r - my)
+        if (d < bestD) [best, bestD] = [i, d]
+      })
+      return best
+    }
     let stars: { r: number; a: number; size: number; alpha: number }[] = []
 
     const resize = () => {
@@ -49,12 +71,24 @@ export function StarField({ className }: { className?: string }) {
       const r = canvas.getBoundingClientRect()
       mouse.x = e.clientX - r.left
       mouse.y = e.clientY - r.top
+      canvas.parentElement!.style.cursor = nearest(mouse.x, mouse.y) < 0 ? "" : "pointer"
+    }
+    const click = (e: MouseEvent) => {
+      // links, buttons and the open project card keep their own clicks
+      if ((e.target as Element).closest("a, button, [data-star-card]")) return
+      const r = canvas.getBoundingClientRect()
+      const x = e.clientX - r.left
+      const y = e.clientY - r.top
+      const index = nearest(x, y)
+      if (index >= 0) ping = { x, y, t: now }
+      pick.current?.(index < 0 ? null : { index, x, y })
+      if (reduce) draw(0)
     }
     const draw = (t: number) => {
+      now = t
       ctx.clearRect(0, 0, w, h)
       // on phones the hero is taller than the screen, so pin the star near the top
-      const px = w * POLE.x
-      const py = w < 768 ? 150 : h * POLE.y
+      const { px, py } = pole()
       ctx.lineCap = "round"
 
       for (const s of stars) {
@@ -72,6 +106,16 @@ export function StarField({ className }: { className?: string }) {
         ctx.beginPath()
         ctx.arc(x, y, s.size * 1.3 + near * 1.6, 0, Math.PI * 2)
         ctx.fill()
+      }
+
+      const age = (t - ping.t) / 700
+      if (age < 1 && !reduce) {
+        ctx.strokeStyle = brand
+        ctx.lineWidth = 2
+        ctx.globalAlpha = 1 - age
+        ctx.beginPath()
+        ctx.arc(ping.x, ping.y, 6 + age * 44, 0, Math.PI * 2)
+        ctx.stroke()
       }
 
       // the pole star: fixed, with a slow pulse
@@ -100,11 +144,13 @@ export function StarField({ className }: { className?: string }) {
     resize()
     addEventListener("resize", resize)
     addEventListener("pointermove", move)
+    addEventListener("click", click)
     if (!reduce) raf = requestAnimationFrame(draw)
     return () => {
       cancelAnimationFrame(raf)
       removeEventListener("resize", resize)
       removeEventListener("pointermove", move)
+      removeEventListener("click", click)
     }
   }, [])
 
