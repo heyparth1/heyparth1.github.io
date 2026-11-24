@@ -63,7 +63,7 @@ export const FEATURED: Featured[] = [
 ]
 
 // More work: compact cards, filterable by category.
-export const CATEGORIES = ["all", "agents", "research", "data", "products"] as const
+export const CATEGORIES = ["all", "agents", "research", "products"] as const
 export type Category = (typeof CATEGORIES)[number]
 
 export type More = Project & { category: Exclude<Category, "all">; stat: string }
@@ -124,14 +124,27 @@ export const MORE: More[] = [
     tags: ["Swift", "SwiftUI", "SwiftData", "Gemini"],
   },
   {
-    name: "Sales-Call Analysis",
-    category: "data",
-    stat: "caught a silence confound (r = 0.96)",
+    name: "Transformer from Scratch",
+    category: "research",
+    stat: "6 layers · 8 heads · d_model 512",
     points: [
-      "Predicted brain responses over 360 cortical regions for 100 transcribed sales calls",
-      "Showed 133 \"significant\" regions were an artifact of silence",
+      "English-to-Italian translation model trained on OPUS Books",
+      "Every block written by hand in PyTorch: multi-head attention, positional encoding, encoder and decoder",
+      "Tracks BLEU, word and character error rate in TensorBoard",
     ],
-    tags: ["Whisper", "TRIBE v2", "statsmodels"],
+    tags: ["PyTorch", "tokenizers", "TensorBoard"],
+    href: `${GITHUB}/Custom-Transformer-Neural-Machine-Translation-System`,
+  },
+  {
+    name: "SAM for Mitochondria",
+    category: "research",
+    stat: "fine-tuned only the mask decoder",
+    points: [
+      "Fine-tuned Meta's Segment Anything (ViT-Base) to segment mitochondria in electron-microscopy scans",
+      "165 EPFL scans cut into 256 px patches, prompted with bounding boxes",
+      "Trained with a Dice + cross-entropy loss",
+    ],
+    tags: ["SAM", "Hugging Face", "MONAI", "PyTorch"],
   },
   {
     name: "AI Interviewer",
